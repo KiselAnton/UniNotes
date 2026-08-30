@@ -1,4 +1,4 @@
-name: Temporary whisper.cpp bundle
+name: Temporary whisper.cpp small bundle
 
 on:
   push:
@@ -30,18 +30,18 @@ jobs:
           cp /tmp/whisper.cpp/build/bin/whisper-cli bundle/
           chmod +x bundle/whisper-cli
 
-      - name: Download multilingual base model
+      - name: Download multilingual small model
         shell: bash
         run: |
           set -euxo pipefail
-          bash /tmp/whisper.cpp/models/download-ggml-model.sh base
-          cp /tmp/whisper.cpp/models/ggml-base.bin bundle/
+          bash /tmp/whisper.cpp/models/download-ggml-model.sh small
+          cp /tmp/whisper.cpp/models/ggml-small.bin bundle/
           ls -lh bundle
 
       - name: Upload bundle
         uses: actions/upload-artifact@v4
         with:
-          name: whispercpp-base-linux-x64
+          name: whispercpp-small-linux-x64
           path: bundle/
           compression-level: 0
           retention-days: 1
