@@ -1,0 +1,19 @@
+name: tmp-drive-audio-test
+
+on:
+  push:
+    branches:
+      - tmp-whisper-artifact-20260830
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Try anonymous Google Drive download
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python -m pip install -q gdown
+          gdown --fuzzy 'https://drive.google.com/file/d/1fqnkX9Yc7wuEIegbGQuSsIELja__XMSw/view?usp=sharing' -O lecture.mp3
+          ls -lh lecture.mp3
+          ffprobe -v error -show_entries format=duration,format_name -of json lecture.mp3
