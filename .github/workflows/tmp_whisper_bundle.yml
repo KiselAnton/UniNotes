@@ -1,0 +1,43 @@
+name: tmp-whisper-bundle
+
+on:
+  push:
+    branches:
+      - tmp-whisper-cs-20260830
+    paths:
+      - .github/workflows/tmp_whisper_bundle.yml
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build whisper.cpp static CLI
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git clone --depth 1 --branch v1.7.6 https://github.com/ggerganov/whisper.cpp.git
+          cmake -S whisper.cpp -B whisper.cpp/build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DBUILD_SHARED_LIBS=OFF \
+            -DGGML_NATIVE=OFF \
+            -DWHISPER_BUILD_TESTS=OFF \
+            -DWHISPER_BUILD_SERVER=OFF
+          cmake --build whisper.cpp/build --config Release -j2
+          mkdir -p bundle
+          cp whisper.cpp/build/bin/whisper-cli bundle/
+      - name: Download multilingual base model
+        shell: bash
+        run: |
+          set -euxo pipefail
+          curl -L --retry 5 --fail \
+            -o bundle/ggml-base.bin \
+            https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.bin
+          sha256sum bundle/* > bundle/SHA256SUMS.txt
+      - name: Upload bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: whisper-cpp-base-linux-x64
+          path: bundle/
+          compression-level: 0
+          retention-days: 1
