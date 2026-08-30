@@ -1,0 +1,33 @@
+name: tmp-whisper-artifact
+
+on:
+  push:
+    branches:
+      - tmp-whisper-artifact-20260830
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build whisper.cpp
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git clone --depth 1 https://github.com/ggml-org/whisper.cpp.git
+          cmake -S whisper.cpp -B whisper.cpp/build -DCMAKE_BUILD_TYPE=Release
+          cmake --build whisper.cpp/build --config Release -j2
+          mkdir -p artifact
+          cp whisper.cpp/build/bin/whisper-cli artifact/
+          find whisper.cpp/build -maxdepth 3 -type f \( -name 'libwhisper.so*' -o -name 'libggml*.so*' \) -exec cp -L {} artifact/ \; || true
+      - name: Download multilingual base model
+        shell: bash
+        run: |
+          set -euxo pipefail
+          curl -L --fail --retry 3 -o artifact/ggml-base.bin https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.bin
+          ls -lh artifact
+      - name: Upload runtime artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: whisper-runtime-base
+          path: artifact/
+          retention-days: 1
