@@ -1,0 +1,47 @@
+name: Temporary whisper.cpp bundle
+
+on:
+  push:
+    branches:
+      - tmp-whisper-bundle-20260830
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout temporary branch
+        uses: actions/checkout@v4
+
+      - name: Build whisper.cpp statically
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends cmake build-essential curl ca-certificates
+          git clone --depth 1 https://github.com/ggerganov/whisper.cpp.git /tmp/whisper.cpp
+          cmake -S /tmp/whisper.cpp -B /tmp/whisper.cpp/build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DBUILD_SHARED_LIBS=OFF \
+            -DGGML_NATIVE=OFF
+          cmake --build /tmp/whisper.cpp/build --config Release -j2
+          mkdir -p bundle
+          cp /tmp/whisper.cpp/build/bin/whisper-cli bundle/
+          chmod +x bundle/whisper-cli
+
+      - name: Download multilingual base model
+        shell: bash
+        run: |
+          set -euxo pipefail
+          bash /tmp/whisper.cpp/models/download-ggml-model.sh base
+          cp /tmp/whisper.cpp/models/ggml-base.bin bundle/
+          ls -lh bundle
+
+      - name: Upload bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: whispercpp-base-linux-x64
+          path: bundle/
+          compression-level: 0
+          retention-days: 1
