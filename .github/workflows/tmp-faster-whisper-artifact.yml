@@ -1,0 +1,37 @@
+name: tmp-faster-whisper-artifact
+
+on:
+  push:
+    branches:
+      - tmp-whisper-artifact-20260830
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Package faster-whisper and multilingual base model
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python -m pip install --upgrade pip
+          mkdir -p artifact/site-packages artifact/model
+          python -m pip install --target artifact/site-packages faster-whisper huggingface_hub
+          PYTHONPATH=artifact/site-packages python - <<'PY'
+          from huggingface_hub import snapshot_download
+          snapshot_download(
+              repo_id='Systran/faster-whisper-base',
+              local_dir='artifact/model',
+              local_dir_use_symlinks=False,
+          )
+          PY
+          du -sh artifact
+      - name: Upload faster-whisper runtime
+        uses: actions/upload-artifact@v4
+        with:
+          name: faster-whisper-runtime-base
+          path: artifact/
+          retention-days: 1
