@@ -1,0 +1,23 @@
+name: Temporary Whisper model fetch
+
+on:
+  push:
+    branches:
+      - tmp-whisper-model-fetch-20260901
+
+jobs:
+  fetch-model:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download mirrored Whisper base model
+        run: |
+          curl -L --fail --retry 3 \
+            https://github.com/aethersdr/AetherSDR/releases/download/asr-models-v1/ggml-base.bin \
+            -o ggml-base.bin
+          sha256sum ggml-base.bin
+      - name: Upload model artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ggml-base-bin
+          path: ggml-base.bin
+          retention-days: 1
