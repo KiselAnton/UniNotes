@@ -16,15 +16,15 @@ jobs:
           git clone --depth 1 https://github.com/ggerganov/whisper.cpp.git
           cmake -S whisper.cpp -B whisper.cpp/build -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF
           cmake --build whisper.cpp/build --config Release -j2
-      - name: Download multilingual base model
+      - name: Download multilingual small model
         run: |
           mkdir -p bundle
-          curl -L --fail --retry 3 -o bundle/ggml-base.bin https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.bin
+          curl -L --fail --retry 3 -o bundle/ggml-small.bin https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small.bin
           cp whisper.cpp/build/bin/whisper-cli bundle/
           ldd whisper.cpp/build/bin/whisper-cli || true
       - name: Upload bundle
         uses: actions/upload-artifact@v4
         with:
-          name: whisper-linux-base-static
+          name: whisper-linux-small-static
           path: bundle/
           retention-days: 1
