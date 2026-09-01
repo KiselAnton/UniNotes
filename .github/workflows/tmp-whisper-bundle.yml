@@ -1,0 +1,28 @@
+name: tmp-whisper-bundle
+on:
+  push:
+    branches: [tmp-whisper-foucault-20260901]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build whisper.cpp
+        run: |
+          git clone --depth 1 https://github.com/ggerganov/whisper.cpp.git
+          cmake -S whisper.cpp -B whisper.cpp/build -DCMAKE_BUILD_TYPE=Release
+          cmake --build whisper.cpp/build --config Release -j2
+      - name: Download multilingual base model
+        run: |
+          mkdir -p bundle
+          curl -L --fail --retry 3 -o bundle/ggml-base.bin https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.bin
+          cp whisper.cpp/build/bin/whisper-cli bundle/
+          ldd whisper.cpp/build/bin/whisper-cli || true
+      - name: Upload bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: whisper-linux-base
+          path: bundle/
+          retention-days: 1
