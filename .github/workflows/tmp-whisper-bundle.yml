@@ -2,6 +2,8 @@ name: tmp-whisper-bundle
 on:
   push:
     branches: [tmp-whisper-foucault-20260901]
+  pull_request:
+    branches: [master]
   workflow_dispatch:
 
 jobs:
