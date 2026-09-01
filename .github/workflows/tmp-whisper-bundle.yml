@@ -1,4 +1,4 @@
-name: tmp-whisper-bundle
+name: tmp-whisper-transcribe
 on:
   push:
     branches: [tmp-whisper-foucault-20260901]
@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  transcribe:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -18,13 +18,26 @@ jobs:
           cmake --build whisper.cpp/build --config Release -j2
       - name: Download multilingual small model
         run: |
-          mkdir -p bundle
-          curl -L --fail --retry 3 -o bundle/ggml-small.bin https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small.bin
-          cp whisper.cpp/build/bin/whisper-cli bundle/
-          ldd whisper.cpp/build/bin/whisper-cli || true
-      - name: Upload bundle
+          curl -L --fail --retry 3 -o ggml-small.bin https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small.bin
+      - name: Download lecture audio from Google Drive
+        run: |
+          curl -L --fail --retry 3 --retry-delay 2 -o lecture.mp3 'https://drive.usercontent.google.com/download?id=1Rt4cY3J3v1yOZUqqYa9htB30en0__8Ix&export=download&confirm=t'
+          ls -lh lecture.mp3
+          size=$(stat -c%s lecture.mp3)
+          if [ "$size" -lt 100000000 ]; then echo "Downloaded file is unexpectedly small: $size"; file lecture.mp3; head -c 200 lecture.mp3 || true; exit 2; fi
+      - name: Probe and prepare WAV
+        run: |
+          ffprobe -v error -show_entries format=duration,format_name -of default=noprint_wrappers=1 lecture.mp3 | tee ffprobe.txt
+          ffmpeg -y -i lecture.mp3 -ac 1 -ar 16000 -c:a pcm_s16le lecture.wav
+      - name: Transcribe Czech lecture
+        run: |
+          ./whisper.cpp/build/bin/whisper-cli -m ggml-small.bin -f lecture.wav -l cs -t 4 -otxt -osrt -of 2026-04-13_Foucault_RAW_small
+      - name: Upload transcript artifact
         uses: actions/upload-artifact@v4
         with:
-          name: whisper-linux-small-static
-          path: bundle/
+          name: foucault-2026-04-13-transcript-small
+          path: |
+            2026-04-13_Foucault_RAW_small.txt
+            2026-04-13_Foucault_RAW_small.srt
+            ffprobe.txt
           retention-days: 1
