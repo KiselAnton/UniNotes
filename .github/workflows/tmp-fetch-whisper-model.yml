@@ -9,15 +9,15 @@ jobs:
   fetch-model:
     runs-on: ubuntu-latest
     steps:
-      - name: Download mirrored Whisper base model
+      - name: Download Whisper tiny q5_1 model
         run: |
           curl -L --fail --retry 3 \
-            https://github.com/aethersdr/AetherSDR/releases/download/asr-models-v1/ggml-base.bin \
-            -o ggml-base.bin
-          sha256sum ggml-base.bin
+            https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny-q5_1.bin \
+            -o ggml-tiny-q5_1.bin
+          sha256sum ggml-tiny-q5_1.bin
       - name: Upload model artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ggml-base-bin
-          path: ggml-base.bin
+          name: ggml-tiny-q5_1-bin
+          path: ggml-tiny-q5_1.bin
           retention-days: 1
