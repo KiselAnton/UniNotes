@@ -1,4 +1,4 @@
-name: ChatGPT temporary whisper.cpp small-q5 build
+name: ChatGPT temporary whisper.cpp tiny-q5 build
 
 on:
   pull_request:
@@ -8,25 +8,25 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Build portable whisper.cpp and fetch multilingual small-q5 + VAD models
+      - name: Build portable whisper.cpp and fetch multilingual tiny-q5 + VAD models
         shell: bash
         run: |
           set -euxo pipefail
           git clone --depth 1 https://github.com/ggml-org/whisper.cpp.git /tmp/whisper.cpp
           cmake -S /tmp/whisper.cpp -B /tmp/whisper.cpp/build -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DWHISPER_BUILD_TESTS=OFF -DWHISPER_BUILD_EXAMPLES=ON
           cmake --build /tmp/whisper.cpp/build --config Release -j2
-          bash /tmp/whisper.cpp/models/download-ggml-model.sh small-q5_1
+          bash /tmp/whisper.cpp/models/download-ggml-model.sh tiny-q5_1
           bash /tmp/whisper.cpp/models/download-vad-model.sh silero-v6.2.0 /tmp/whisper.cpp/models
           mkdir -p /tmp/artifact
           cp /tmp/whisper.cpp/build/bin/whisper-cli /tmp/artifact/
-          cp /tmp/whisper.cpp/models/ggml-small-q5_1.bin /tmp/artifact/
+          cp /tmp/whisper.cpp/models/ggml-tiny-q5_1.bin /tmp/artifact/
           cp /tmp/whisper.cpp/models/ggml-silero-v6.2.0.bin /tmp/artifact/
           chmod +x /tmp/artifact/whisper-cli
-          tar -C /tmp/artifact -czf /tmp/whisper-small-q5-vad-portable-linux-x64.tar.gz .
+          tar -C /tmp/artifact -czf /tmp/whisper-tiny-q5-vad-portable-linux-x64.tar.gz .
       - name: Upload whisper.cpp bundle
         uses: actions/upload-artifact@v4
         with:
-          name: whisper-small-q5-vad-portable-linux-x64
-          path: /tmp/whisper-small-q5-vad-portable-linux-x64.tar.gz
+          name: whisper-tiny-q5-vad-portable-linux-x64
+          path: /tmp/whisper-tiny-q5-vad-portable-linux-x64.tar.gz
           compression-level: 0
           retention-days: 1
