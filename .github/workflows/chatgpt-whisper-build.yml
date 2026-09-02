@@ -8,23 +8,33 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Build whisper.cpp and fetch multilingual base model
+      - name: Build portable whisper.cpp and fetch multilingual base model
         shell: bash
         run: |
           set -euxo pipefail
           git clone --depth 1 https://github.com/ggml-org/whisper.cpp.git /tmp/whisper.cpp
-          cmake -S /tmp/whisper.cpp -B /tmp/whisper.cpp/build -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DWHISPER_BUILD_TESTS=OFF -DWHISPER_BUILD_EXAMPLES=ON
+          cmake -S /tmp/whisper.cpp -B /tmp/whisper.cpp/build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DBUILD_SHARED_LIBS=OFF \
+            -DWHISPER_BUILD_TESTS=OFF \
+            -DWHISPER_BUILD_EXAMPLES=ON \
+            -DGGML_NATIVE=OFF \
+            -DGGML_AVX=ON \
+            -DGGML_AVX2=ON \
+            -DGGML_FMA=ON \
+            -DGGML_AVX512=OFF \
+            -DGGML_AMX=OFF
           cmake --build /tmp/whisper.cpp/build --config Release -j2
           bash /tmp/whisper.cpp/models/download-ggml-model.sh base
           mkdir -p /tmp/artifact
           cp /tmp/whisper.cpp/build/bin/whisper-cli /tmp/artifact/
           cp /tmp/whisper.cpp/models/ggml-base.bin /tmp/artifact/
           chmod +x /tmp/artifact/whisper-cli
-          tar -C /tmp/artifact -czf /tmp/whisper-base-linux-x64.tar.gz .
+          tar -C /tmp/artifact -czf /tmp/whisper-base-portable-linux-x64.tar.gz .
       - name: Upload whisper.cpp bundle
         uses: actions/upload-artifact@v4
         with:
-          name: whisper-base-linux-x64
-          path: /tmp/whisper-base-linux-x64.tar.gz
+          name: whisper-base-portable-linux-x64
+          path: /tmp/whisper-base-portable-linux-x64.tar.gz
           compression-level: 0
           retention-days: 1
