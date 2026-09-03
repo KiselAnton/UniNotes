@@ -1,0 +1,50 @@
+name: tmp-whisper-build
+
+on:
+  push:
+    branches:
+      - 'tmp/whisper-build-20260903'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone whisper.cpp
+        run: |
+          git clone --depth 1 https://github.com/ggerganov/whisper.cpp.git
+
+      - name: Build whisper-cli
+        run: |
+          cmake -S whisper.cpp -B whisper.cpp/build \
+            -DWHISPER_BUILD_TESTS=OFF \
+            -DWHISPER_BUILD_EXAMPLES=ON \
+            -DWHISPER_BUILD_SERVER=OFF \
+            -DBUILD_SHARED_LIBS=OFF \
+            -DGGML_NATIVE=OFF
+          cmake --build whisper.cpp/build --config Release -j 2 --target whisper-cli
+
+      - name: Download multilingual base model
+        run: |
+          cd whisper.cpp
+          bash models/download-ggml-model.sh base
+          test -s models/ggml-base.bin
+
+      - name: Package runtime
+        run: |
+          mkdir -p artifact/bin artifact/models
+          cp whisper.cpp/build/bin/whisper-cli artifact/bin/
+          cp whisper.cpp/models/ggml-base.bin artifact/models/
+          chmod +x artifact/bin/whisper-cli
+          printf 'whisper.cpp commit: ' > artifact/BUILD_INFO.txt
+          git -C whisper.cpp rev-parse HEAD >> artifact/BUILD_INFO.txt
+          file artifact/bin/whisper-cli >> artifact/BUILD_INFO.txt
+          ldd artifact/bin/whisper-cli >> artifact/BUILD_INFO.txt || true
+          du -h artifact/bin/whisper-cli artifact/models/ggml-base.bin >> artifact/BUILD_INFO.txt
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: whisper-base-linux
+          path: artifact
+          retention-days: 1
+          compression-level: 0
